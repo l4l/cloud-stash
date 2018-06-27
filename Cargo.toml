@@ -1,0 +1,14 @@
+[package]
+name = "cloud-stash"
+version = "0.1.0"
+authors = ["Kitsu <mail@kitsu.me>"]
+
+[[bin]]
+name = "upload"
+path = "src/upload.rs"
+
+[[bin]]
+name = "download"
+path = "src/download.rs"
+
+[dependencies]
