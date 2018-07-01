@@ -10,6 +10,6 @@ pub enum ErrorFind {
     Matched(Vec<String>),
 }
 
-pub fn find(_fname: &String) -> Result<Vec<chunk::Hash>, ErrorFind> {
+pub fn find(_fname: &str) -> Result<Vec<chunk::Hash>, ErrorFind> {
     unimplemented!();
 }

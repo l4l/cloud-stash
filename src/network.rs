@@ -1,15 +1,8 @@
-mod local;
-mod remote;
-mod chunk;
-
-use std::env;
 use std::fs::File;
 use std::io::Read;
+use {local, remote};
 
-fn main() {
-    let usage = format!("Use {} <file>", env::args().nth(0).unwrap());
-    let file = env::args().nth(1).expect(&usage);
-
+pub fn upload(file: &str) {
     let mut content = Vec::new();
     File::open(&file)
         .expect(&format!("Can't open {}", &file))
@@ -19,5 +12,12 @@ fn main() {
     let chunks = local::save(&content);
     for c in chunks {
         remote::publish(&c);
+    }
+}
+
+pub fn download(fname: &str) {
+    let hash_list = local::find(&fname).unwrap();
+    for h in hash_list {
+        remote::receive(&h);
     }
 }

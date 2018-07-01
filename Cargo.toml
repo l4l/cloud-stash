@@ -3,12 +3,7 @@ name = "cloud-stash"
 version = "0.1.0"
 authors = ["Kitsu <mail@kitsu.me>"]
 
-[[bin]]
-name = "upload"
-path = "src/upload.rs"
-
-[[bin]]
-name = "download"
-path = "src/download.rs"
-
 [dependencies]
+docopt = "0.8"
+serde = "1.0"
+serde_derive = "1.0"
