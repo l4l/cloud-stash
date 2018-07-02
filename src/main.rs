@@ -7,10 +7,12 @@ mod local;
 mod remote;
 mod chunk;
 mod network;
+mod get_token;
 
 const USAGE: &'static str = "
 cloud-stash is a tool for managing multiple file storage accounts.
 Usage:
+  cloud-stash (-a | --auth)
   cloud-stash (-u | --upload) <file>
   cloud-stash (-d | --download) <file>
   cloud-stash (-h | --help)
@@ -20,8 +22,9 @@ Arguments:
   <file>            File path for working with
 
 Options:
+  -a --auth              Authorize app and get a token
   -u --upload              Upload a file
-  -d --download           Download a file
+  -d --download            Download a file
   -h --help                Show this help.
   --version                Show version.
 ";
@@ -29,6 +32,7 @@ Options:
 #[derive(Debug, Deserialize)]
 struct Args {
     arg_file: Option<String>,
+    flag_auth: bool,
     flag_upload: bool,
     flag_download: bool,
 }
@@ -37,7 +41,9 @@ fn main() {
     let args: Args = docopt::Docopt::new(USAGE)
         .and_then(|d| d.deserialize())
         .unwrap_or_else(|e| e.exit());
-    if args.flag_upload {
+    if args.flag_auth {
+        get_token::run_handler();
+    } else if args.flag_upload {
         network::upload(&args.arg_file.expect(USAGE));
     } else if args.flag_download {
         network::download(&args.arg_file.expect(USAGE));
