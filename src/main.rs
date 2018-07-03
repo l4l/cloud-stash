@@ -6,20 +6,21 @@ extern crate serde_derive;
 mod local;
 mod remote;
 mod chunk;
-mod network;
+mod service;
 mod get_token;
 
 const USAGE: &'static str = "
 cloud-stash is a tool for managing multiple file storage accounts.
 Usage:
   cloud-stash (-a | --auth)
-  cloud-stash (-u | --upload) <file>
-  cloud-stash (-d | --download) <file>
+  cloud-stash (-u | --upload) <file> <token>
+  cloud-stash (-d | --download) <file> <token>
   cloud-stash (-h | --help)
   cloud-stash --version
 
 Arguments:
   <file>            File path for working with
+  <token>           Dropbox auth token
 
 Options:
   -a --auth              Authorize app and get a token
@@ -32,6 +33,7 @@ Options:
 #[derive(Debug, Deserialize)]
 struct Args {
     arg_file: Option<String>,
+    arg_token: Option<String>,
     flag_auth: bool,
     flag_upload: bool,
     flag_download: bool,
@@ -43,9 +45,14 @@ fn main() {
         .unwrap_or_else(|e| e.exit());
     if args.flag_auth {
         get_token::run_handler();
-    } else if args.flag_upload {
-        network::upload(&args.arg_file.expect(USAGE));
+    }
+    let mut service = service::Service::<local::sqlite::Sqlite, remote::dropbox::Dropbox> {
+        db: local::sqlite::Sqlite {},
+        provider: remote::dropbox::Dropbox::new(args.arg_token.expect(USAGE)),
+    };
+    if args.flag_upload {
+        service.upload(&args.arg_file.expect(USAGE));
     } else if args.flag_download {
-        network::download(&args.arg_file.expect(USAGE));
+        service.download(&args.arg_file.expect(USAGE));
     }
 }

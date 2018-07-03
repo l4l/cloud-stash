@@ -1,9 +1,7 @@
 use chunk;
+pub mod dropbox;
 
-pub fn publish<'a>(_s: &chunk::Chunk<'a>) {
-    unimplemented!();
-}
-
-pub fn receive(_h: &chunk::Hash) -> chunk::Data {
-    unimplemented!();
+pub trait Provider {
+    fn publish<'a>(&mut self, s: &chunk::Chunk<'a>);
+    fn receive(&mut self, h: &chunk::Hash) -> chunk::Data;
 }
