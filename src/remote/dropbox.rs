@@ -1,4 +1,5 @@
 use chunk;
+use crypto::Hash;
 use remote::Provider;
 
 #[derive(Debug)]
@@ -17,11 +18,11 @@ impl<'a> Dropbox {
 }
 
 impl Provider for Dropbox {
-    fn publish<'a>(&mut self, s: &chunk::Chunk<'a>) {
+    fn publish<'a>(&mut self, s: &chunk::Chunk) {
         unimplemented!();
     }
 
-    fn receive(&mut self, h: &chunk::Hash) -> chunk::Data {
+    fn receive(&mut self, h: &Hash) -> chunk::Data {
         unimplemented!();
     }
 }

@@ -2,12 +2,15 @@ extern crate docopt;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+extern crate sqlite;
+extern crate sha3;
 
 mod local;
 mod remote;
 mod chunk;
 mod service;
 mod get_token;
+mod crypto;
 
 const USAGE: &'static str = "
 cloud-stash is a tool for managing multiple file storage accounts.
@@ -47,7 +50,7 @@ fn main() {
         get_token::run_handler();
     }
     let mut service = service::Service::<local::sqlite::Sqlite, remote::dropbox::Dropbox> {
-        db: local::sqlite::Sqlite {},
+        db: local::sqlite::Sqlite::new(":memory:"),
         provider: remote::dropbox::Dropbox::new(args.arg_token.expect(USAGE)),
     };
     if args.flag_upload {
