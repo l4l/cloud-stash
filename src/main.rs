@@ -16,13 +16,14 @@ const USAGE: &'static str = "
 cloud-stash is a tool for managing multiple file storage accounts.
 Usage:
   cloud-stash (-a | --auth)
-  cloud-stash (-u | --upload) <file> <token>
+  cloud-stash (-u | --upload) <file> <newname> <token>
   cloud-stash (-d | --download) <file> <token>
   cloud-stash (-h | --help)
   cloud-stash --version
 
 Arguments:
   <file>            File path for working with
+  <newname>        New name of the uploaded file
   <token>           Dropbox auth token
 
 Options:
@@ -36,6 +37,7 @@ Options:
 #[derive(Debug, Deserialize)]
 struct Args {
     arg_file: Option<String>,
+    arg_newname: Option<String>,
     arg_token: Option<String>,
     flag_auth: bool,
     flag_upload: bool,
@@ -54,7 +56,10 @@ fn main() {
         provider: remote::dropbox::Dropbox::new(args.arg_token.expect(USAGE)),
     };
     if args.flag_upload {
-        service.upload(&args.arg_file.expect(USAGE));
+        service.upload(
+            &args.arg_newname.expect(USAGE),
+            &args.arg_file.expect(USAGE),
+        );
     } else if args.flag_download {
         service.download(&args.arg_file.expect(USAGE));
     }

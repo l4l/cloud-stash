@@ -11,3 +11,12 @@ pub fn hash<'a>(s: &'a [u8]) -> Hash {
     res.iter().enumerate().for_each(|(i, h)| hash[i] = *h);
     hash
 }
+
+pub fn hash_cmp(h1: &Hash, h2: &Hash) -> bool {
+    for i in 0..HASH_SIZE {
+        if h1[i] != h2[i] {
+            return false;
+        }
+    }
+    true
+}

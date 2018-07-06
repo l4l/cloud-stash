@@ -9,13 +9,13 @@ pub struct Service<Db, Provider> {
 
 impl<Db: local::Db, Provider: remote::Provider> Service<Db, Provider> {
     // TODO?: return result
-    pub fn upload(&mut self, file: &str) {
+    pub fn upload(&mut self, fname: &str, file: &str) {
         let mut content = Vec::new();
         File::open(&file)
             .expect(&format!("Can't open {}", &file))
             .read_to_end(&mut content)
             .expect("Something happened during file reading");
-        let chunks = self.db.save(&content);
+        let chunks = self.db.save(fname, &content);
         for c in chunks {
             self.provider.publish(&c);
         }
