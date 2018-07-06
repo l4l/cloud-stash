@@ -1,6 +1,7 @@
 os:
   - linux
 language: rust
+cache: cargo
 rust:
   - stable
   - nightly

@@ -11,7 +11,7 @@ sqlite = "0.23.9"
 sha3 = "*"
 reqwest = "0.8.6"
 serde_json = "1.0"
-hyper = "*"
+hyper = "0.11.27"
 
 [dev-dependencies]
 rand = "*"
