@@ -49,7 +49,7 @@ impl Db for Sqlite {
                 let mut add_chunk = self.conn
                     .prepare("INSERT INTO hashes VALUES(?, ?, ?)")
                     .unwrap();
-                add_chunk.bind(1, &h as &[u8]).unwrap();
+                add_chunk.bind(1, h.hash() as &[u8]).unwrap();
                 add_chunk.bind(2, id).unwrap();
                 add_chunk.bind(3, idx as i64).unwrap();
                 assert_eq!(add_chunk.next().unwrap(), sqlite::State::Done);
@@ -74,7 +74,7 @@ impl Db for Sqlite {
             let hash_blob = file_info.read::<Vec<u8>>(0).unwrap();
             let mut hash = [0u8; HASH_SIZE];
             hash_blob.iter().enumerate().for_each(|(i, h)| hash[i] = *h);
-            vec.push(hash);
+            vec.push(Hash::new(hash));
         }
         if vec.len() == 0 {
             Err(ErrorFind::NoMatch)
@@ -108,10 +108,7 @@ mod test {
         assert_eq!(chunks.len(), 4);
         for i in 0..4 {
             assert_eq!(chunks[i].idx, i as u64);
-            assert!(crypto::hash_cmp(
-                &crypto::hash(&chunks[i].chunk),
-                &chunks[i].hash,
-            ));
+            assert_eq!(&crypto::hash(&chunks[i].chunk), &chunks[i].hash);
         }
         chunks.sort_by_key(|c| c.idx);
         chunks
@@ -130,9 +127,9 @@ mod test {
         chunks.sort_by_key(|c| c.idx);
         // FIXME: may come unordered
         let hashes = s.find(fname).unwrap();
-        chunks.iter().map(|c| c.hash).zip(hashes).for_each(
+        chunks.iter().map(|c| &c.hash).zip(hashes).for_each(
             |(c, h)| {
-                assert!(crypto::hash_cmp(&c, &h))
+                assert_eq!(c, &h)
             },
         );
     }

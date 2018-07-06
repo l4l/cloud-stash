@@ -1,7 +1,19 @@
 use sha3::{Sha3_256, Digest};
+use std::fmt;
 
 pub const HASH_SIZE: usize = 32;
-pub type Hash = [u8; HASH_SIZE];
+#[derive(Debug)]
+pub struct Hash([u8; HASH_SIZE]);
+
+impl Hash {
+    pub fn new(h: [u8; HASH_SIZE]) -> Hash {
+        Hash(h)
+    }
+
+    pub fn hash<'a>(&'a self) -> &'a [u8; HASH_SIZE] {
+        &self.0
+    }
+}
 
 pub fn hash<'a>(s: &'a [u8]) -> Hash {
     let mut hasher = Sha3_256::default();
@@ -9,24 +21,21 @@ pub fn hash<'a>(s: &'a [u8]) -> Hash {
     let res = hasher.result();
     let mut hash = [0u8; HASH_SIZE];
     res.iter().enumerate().for_each(|(i, h)| hash[i] = *h);
-    hash
+    Hash::new(hash)
 }
 
-pub fn hash_cmp(h1: &Hash, h2: &Hash) -> bool {
-    for i in 0..HASH_SIZE {
-        if h1[i] != h2[i] {
-            return false;
-        }
+impl PartialEq for Hash {
+    fn eq(&self, other: &Hash) -> bool {
+        self.0 == other.0
     }
-    true
 }
 
-pub fn hash_hex(h: &Hash) -> String {
-    h.iter().fold(
-        String::with_capacity(HASH_SIZE * 2),
-        |mut acc, b| {
-            acc.push_str(&format!("{:x}", b));
-            acc
-        },
-    )
+impl fmt::Display for Hash {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.0
+            .iter()
+            .map(|x| write!(f, "{:x}", x))
+            .find(|r| r.is_err())
+            .unwrap_or(Ok(()))
+    }
 }

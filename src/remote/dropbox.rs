@@ -6,7 +6,6 @@ use reqwest;
 use hyper::error::Error;
 use reqwest::header::{Authorization, Header, Bearer, Formatter, Raw, ContentType};
 use serde_json;
-use crypto::hash_hex;
 
 #[derive(Debug)]
 pub struct Dropbox {
@@ -52,7 +51,7 @@ impl Provider for Dropbox {
             .post("https://content.dropboxapi.com/2/files/upload")
             .header(Authorization(Bearer { token: self.token().to_owned() }))
             .header(DropboxApiArg {
-                val: json!({"path": format!("/{}", &hash_hex(&s.hash)),
+                val: json!({"path": format!("/{}", &s.hash),
                             "mode": "add",
                             "autorename": false}),
             })
@@ -68,9 +67,7 @@ impl Provider for Dropbox {
         let mut res = client
             .post("https://content.dropboxapi.com/2/files/download")
             .header(Authorization(Bearer { token: self.token().to_owned() }))
-            .header(DropboxApiArg {
-                val: json!({"path": format!("/{}", &hash_hex(&h))}),
-            })
+            .header(DropboxApiArg { val: json!({"path": format!("/{}", &h)}) })
             .send()
             .unwrap();
         let mut buf = Vec::new();
