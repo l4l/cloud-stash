@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, Write};
 use {local, remote};
 
 pub struct Service<Db, Provider> {
@@ -22,10 +22,11 @@ impl<Db: local::Db, Provider: remote::Provider> Service<Db, Provider> {
     }
 
     // TODO?: return result
-    pub fn download(&mut self, fname: &str) {
+    pub fn download(&mut self, fname: &str, newname: &str) {
         let hash_list = self.db.find(&fname).unwrap();
+        let mut file = File::create(newname).unwrap();
         for h in hash_list {
-            self.provider.receive(&h);
+            file.write(&self.provider.receive(&h)).unwrap();
         }
     }
 }

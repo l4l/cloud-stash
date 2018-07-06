@@ -64,6 +64,21 @@ impl Provider for Dropbox {
     }
 
     fn receive(&mut self, h: &Hash) -> chunk::Data {
-        unimplemented!();
+        let client = reqwest::Client::new();
+        let mut res = client
+            .post("https://content.dropboxapi.com/2/files/download")
+            .header(Authorization(Bearer { token: self.token().to_owned() }))
+            .header(DropboxApiArg {
+                val: json!({"path": format!("/{}", &hash_hex(&h))}),
+            })
+            .send()
+            .unwrap();
+        let mut buf = Vec::new();
+        res.copy_to(&mut buf).unwrap();
+        assert_eq!(buf.len(), chunk::CHUNK_SIZE);
+        println!("{:?}", res);
+        let mut r = [0u8; chunk::CHUNK_SIZE];
+        r.copy_from_slice(&buf[..chunk::CHUNK_SIZE]);
+        r
     }
 }

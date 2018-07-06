@@ -21,13 +21,13 @@ cloud-stash is a tool for managing multiple file storage accounts.
 Usage:
   cloud-stash (-a | --auth)
   cloud-stash (-u | --upload) <file> <newname> <token>
-  cloud-stash (-d | --download) <file> <token>
+  cloud-stash (-d | --download) <file> <newname> <token>
   cloud-stash (-h | --help)
   cloud-stash --version
 
 Arguments:
   <file>            File path for working with
-  <newname>        New name of the uploaded file
+  <newname>         New name of the uploaded/saved file
   <token>           Dropbox auth token
 
 Options:
@@ -65,6 +65,9 @@ fn main() {
             &args.arg_file.expect(USAGE),
         );
     } else if args.flag_download {
-        service.download(&args.arg_file.expect(USAGE));
+        service.download(
+            &args.arg_file.expect(USAGE),
+            &args.arg_newname.expect(USAGE),
+        );
     }
 }
