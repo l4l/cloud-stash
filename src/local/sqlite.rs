@@ -20,7 +20,7 @@ impl Sqlite {
         let c = sqlite::open(dbfile).unwrap();
         c.execute(concat!(
             "CREATE TABLE IF NOT EXISTS files (fname TEXT, id INTEGER, PRIMARY KEY(id), CONSTRAINT fname_unique UNIQUE (fname));",
-            "CREATE TABLE IF NOT EXISTS hashes (hash BLOB, id INTEGER, idx INTEGER, FOREIGN KEY(id) REFERENCES files(id), PRIMARY KEY(hash, idx));",
+            "CREATE TABLE IF NOT EXISTS hashes (hash BLOB, id INTEGER, idx INTEGER, FOREIGN KEY(id) REFERENCES files(id), PRIMARY KEY(id, idx));",
         )).unwrap();
         Sqlite { conn: c }
     }
@@ -65,7 +65,7 @@ impl Db for Sqlite {
     fn find(&mut self, fname: &str) -> Result<Vec<Hash>, ErrorFind> {
         let mut file_info = self.conn
             .prepare(
-                "SELECT hash, idx FROM hashes WHERE hashes.id=(SELECT id FROM files WHERE fname=?)",
+                "SELECT hash, idx FROM hashes WHERE hashes.id=(SELECT id FROM files WHERE fname=?) ORDER BY idx",
             )
             .unwrap();
         file_info.bind(1, fname).unwrap();
@@ -104,13 +104,12 @@ mod test {
     #[test]
     fn save_chunks_properly() {
         let b = random_blob(chunk::CHUNK_SIZE * 3 + 1);
-        let mut chunks = init().save("myfile", &b);
+        let chunks = init().save("myfile", &b);
         assert_eq!(chunks.len(), 4);
         for i in 0..4 {
             assert_eq!(chunks[i].idx, i as u64);
             assert_eq!(&crypto::hash(&chunks[i].chunk), &chunks[i].hash);
         }
-        chunks.sort_by_key(|c| c.idx);
         chunks
             .iter()
             .flat_map(|c| c.chunk.iter())
@@ -123,14 +122,29 @@ mod test {
         let mut s = init();
         let b = random_blob(chunk::CHUNK_SIZE * 3 + 1);
         let fname = "myfile";
-        let mut chunks = s.save(fname, &b);
-        chunks.sort_by_key(|c| c.idx);
-        // FIXME: may come unordered
+        let chunks = s.save(fname, &b);
         let hashes = s.find(fname).unwrap();
         chunks.iter().map(|c| &c.hash).zip(hashes).for_each(
             |(c, h)| {
                 assert_eq!(c, &h)
             },
         );
+    }
+
+    #[test]
+    fn save_same_chunks() {
+        let b = random_blob(chunk::CHUNK_SIZE * 3 + 1);
+        let mut s = init();
+        let first_chunks = s.save("myfile1", &b);
+        let second_chunks = s.save("myfile2", &b);
+        first_chunks
+            .iter()
+            .flat_map(|c| c.chunk.iter())
+            .zip(second_chunks.iter().flat_map(|c| c.chunk.iter()))
+            .zip(&b)
+            .for_each(|((c1, c2), b)| {
+                assert_eq!(c1, b);
+                assert_eq!(c2, b);
+            });
     }
 }
