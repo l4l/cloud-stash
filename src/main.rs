@@ -22,6 +22,7 @@ Usage:
   cloud-stash (-a | --auth)
   cloud-stash (-u | --upload) <file> <newname> <token>
   cloud-stash (-d | --download) <file> <newname> <token>
+  cloud-stash (-r | --remove) <file> <token>
   cloud-stash (-h | --help)
   cloud-stash --version
 
@@ -31,9 +32,10 @@ Arguments:
   <token>           Dropbox auth token
 
 Options:
-  -a --auth              Authorize app and get a token
+  -a --auth                Authorize app and get a token
   -u --upload              Upload a file
   -d --download            Download a file
+  -r --remove              File removing from the remote host
   -h --help                Show this help.
   --version                Show version.
 ";
@@ -46,6 +48,7 @@ struct Args {
     flag_auth: bool,
     flag_upload: bool,
     flag_download: bool,
+    flag_remove: bool,
 }
 
 fn main() {
@@ -69,5 +72,7 @@ fn main() {
             &args.arg_file.expect(USAGE),
             &args.arg_newname.expect(USAGE),
         );
+    } else if args.flag_remove {
+        service.remove(&args.arg_file.expect(USAGE));
     }
 }

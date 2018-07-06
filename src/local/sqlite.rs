@@ -1,7 +1,7 @@
 use chunk;
 use local::{Db, ErrorFind};
 use sqlite;
-use crypto::{hash, Hash, HASH_SIZE};
+use crypto::{hash, Hash, Hashes, HASH_SIZE};
 
 pub struct Sqlite {
     conn: sqlite::Connection,
@@ -62,7 +62,7 @@ impl Db for Sqlite {
             .collect()
     }
 
-    fn find(&mut self, fname: &str) -> Result<Vec<Hash>, ErrorFind> {
+    fn find(&mut self, fname: &str) -> Result<Hashes, ErrorFind> {
         let mut file_info = self.conn
             .prepare(
                 "SELECT hash, idx FROM hashes WHERE hashes.id=(SELECT id FROM files WHERE fname=?) ORDER BY idx",
@@ -81,6 +81,18 @@ impl Db for Sqlite {
         } else {
             Ok(vec)
         }
+    }
+
+    fn clean(&mut self, fname: &str) {
+        let exec = |qry| {
+            let mut rmv = self.conn.prepare(qry).unwrap();
+            rmv.bind(1, fname).unwrap();
+            rmv.next().unwrap();
+        };
+        exec(
+            "DELETE FROM hashes WHERE hashes.id=(SELECT id FROM files WHERE fname=?)",
+        );
+        exec("DELETE FROM files WHERE fname=?");
     }
 }
 
@@ -146,5 +158,16 @@ mod test {
                 assert_eq!(c1, b);
                 assert_eq!(c2, b);
             });
+    }
+
+    #[test]
+    fn save_remove_find() {
+        let mut s = init();
+        let b = random_blob(chunk::CHUNK_SIZE * 3 + 1);
+        let fname = "myfile";
+        let _ = s.save(fname, &b);
+        assert!(s.find(fname).is_ok());
+        s.clean(fname);
+        assert!(s.find(fname).is_err());
     }
 }

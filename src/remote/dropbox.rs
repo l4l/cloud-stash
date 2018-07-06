@@ -1,6 +1,6 @@
 use std;
 use chunk;
-use crypto::Hash;
+use crypto::{Hash, Hashes};
 use remote::Provider;
 use reqwest;
 use hyper::error::Error;
@@ -77,5 +77,16 @@ impl Provider for Dropbox {
         let mut r = [0u8; chunk::CHUNK_SIZE];
         r.copy_from_slice(&buf[..chunk::CHUNK_SIZE]);
         r
+    }
+
+    fn delete(&mut self, hs: &Hashes) {
+        let client = reqwest::Client::new();
+        let res = client
+            .post("https://content.dropboxapi.com/2/files/download")
+            .header(Authorization(Bearer { token: self.token().to_owned() }))
+            .header(DropboxApiArg { val: json!({"entries": serde_json::Value::Array(hs.iter().map(|h| json!({"path": format!("/{}", &h)})).collect())})})
+            .send()
+            .unwrap();
+        println!("{:?}", res);
     }
 }

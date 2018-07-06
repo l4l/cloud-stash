@@ -4,6 +4,7 @@ use std::fmt;
 pub const HASH_SIZE: usize = 32;
 #[derive(Debug)]
 pub struct Hash([u8; HASH_SIZE]);
+pub type Hashes = Vec<Hash>;
 
 impl Hash {
     pub fn new(h: [u8; HASH_SIZE]) -> Hash {

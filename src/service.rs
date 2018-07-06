@@ -29,4 +29,10 @@ impl<Db: local::Db, Provider: remote::Provider> Service<Db, Provider> {
             file.write(&self.provider.receive(&h)).unwrap();
         }
     }
+
+    pub fn remove(&mut self, fname: &str) {
+        let hash_list = self.db.find(&fname).unwrap();
+        self.db.clean(&fname);
+        self.provider.delete(&hash_list);
+    }
 }
