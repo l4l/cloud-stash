@@ -4,6 +4,10 @@ extern crate serde;
 extern crate serde_derive;
 extern crate sqlite;
 extern crate sha3;
+extern crate reqwest;
+#[macro_use]
+extern crate serde_json;
+extern crate hyper;
 
 mod local;
 mod remote;
@@ -52,7 +56,7 @@ fn main() {
         get_token::run_handler();
     }
     let mut service = service::Service::<local::sqlite::Sqlite, remote::dropbox::Dropbox> {
-        db: local::sqlite::Sqlite::new(":memory:"),
+        db: local::sqlite::Sqlite::new("db"),
         provider: remote::dropbox::Dropbox::new(args.arg_token.expect(USAGE)),
     };
     if args.flag_upload {

@@ -1,6 +1,6 @@
 use sha3::{Sha3_256, Digest};
 
-pub const HASH_SIZE: usize = 512;
+pub const HASH_SIZE: usize = 32;
 pub type Hash = [u8; HASH_SIZE];
 
 pub fn hash<'a>(s: &'a [u8]) -> Hash {
@@ -19,4 +19,14 @@ pub fn hash_cmp(h1: &Hash, h2: &Hash) -> bool {
         }
     }
     true
+}
+
+pub fn hash_hex(h: &Hash) -> String {
+    h.iter().fold(
+        String::with_capacity(HASH_SIZE * 2),
+        |mut acc, b| {
+            acc.push_str(&format!("{:x}", b));
+            acc
+        },
+    )
 }

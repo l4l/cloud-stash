@@ -9,6 +9,9 @@ serde = "1.0"
 serde_derive = "1.0"
 sqlite = "0.23.9"
 sha3 = "*"
+reqwest = "0.8.6"
+serde_json = "1.0"
+hyper = "*"
 
 [dev-dependencies]
 rand = "*"
