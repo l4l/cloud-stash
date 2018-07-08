@@ -2,13 +2,13 @@ use std::net::TcpListener;
 use std::io::Write;
 use std::process::exit;
 
-const URL: &'static str = concat!(
+const URL: &str = concat!(
     "https://www.dropbox.com/oauth2/authorize?",
     "response_type=token",
     "&client_id=g71rb26y469u0n6",
     "&redirect_uri=http://localhost:8080"
 );
-const SCRIPT: &'static str = concat!(
+const SCRIPT: &str = concat!(
     "HTTP/1.1 200 OK\r\n",
     "Content-Type: text/html; charset=utf8\r\n",
     "Content-Length: 172\r\n\r\n",

@@ -16,7 +16,7 @@ mod service;
 mod get_token;
 mod crypto;
 
-const USAGE: &'static str = "
+const USAGE: &str = "
 cloud-stash is a tool for managing multiple file storage accounts.
 Usage:
   cloud-stash (-a | --auth)

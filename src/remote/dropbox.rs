@@ -1,6 +1,6 @@
 use std;
 use chunk;
-use crypto::{Hash, Hashes};
+use crypto::Hash;
 use remote::Provider;
 use reqwest;
 use hyper::error::Error;
@@ -18,7 +18,7 @@ impl<'a> Dropbox {
     }
 
     pub fn token(&'a self) -> &'a str {
-        return &self.token;
+        &self.token
     }
 }
 
@@ -45,7 +45,7 @@ impl Header for DropboxApiArg {
 }
 
 impl Provider for Dropbox {
-    fn publish<'a>(&mut self, s: &chunk::Chunk) {
+    fn publish(&mut self, s: &chunk::Chunk) {
         let client = reqwest::Client::new();
         let res = client
             .post("https://content.dropboxapi.com/2/files/upload")
@@ -56,7 +56,8 @@ impl Provider for Dropbox {
                             "autorename": false}),
             })
             .header(ContentType::octet_stream())
-            .body(s.chunk.iter().map(|x| *x).collect::<Vec<u8>>())
+            // FIXME?: perhaphs that doesn't need to be cloned
+            .body(s.chunk.iter().cloned().collect::<Vec<u8>>())
             .send()
             .unwrap();
         println!("{:?}", res);
@@ -79,7 +80,7 @@ impl Provider for Dropbox {
         r
     }
 
-    fn delete(&mut self, hs: &Hashes) {
+    fn delete(&mut self, hs: &[Hash]) {
         let client = reqwest::Client::new();
         let res = client
             .post("https://content.dropboxapi.com/2/files/download")

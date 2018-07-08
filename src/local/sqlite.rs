@@ -1,7 +1,7 @@
 use chunk;
 use local::{Db, ErrorFind};
 use sqlite;
-use crypto::{hash, Hash, Hashes, HASH_SIZE};
+use crypto::{hash, Hash, HASH_SIZE};
 
 pub struct Sqlite {
     conn: sqlite::Connection,
@@ -63,7 +63,7 @@ impl Db for Sqlite {
             .collect()
     }
 
-    fn find(&mut self, fname: &str) -> Result<(usize, Hashes), ErrorFind> {
+    fn find(&mut self, fname: &str) -> Result<(usize, Vec<Hash>), ErrorFind> {
         let mut file_info = self.conn
             .prepare(
                 "SELECT hash, idx FROM hashes WHERE hashes.id=(SELECT id FROM files WHERE fname=?) ORDER BY idx",
@@ -77,7 +77,7 @@ impl Db for Sqlite {
             hash_blob.iter().enumerate().for_each(|(i, h)| hash[i] = *h);
             vec.push(Hash::new(hash));
         }
-        if vec.len() == 0 {
+        if vec.is_empty() {
             Err(ErrorFind::NoMatch)
         } else {
             let mut file_size = self.conn

@@ -1,5 +1,5 @@
 use chunk;
-use crypto::Hashes;
+use crypto::Hash;
 pub mod sqlite;
 
 #[derive(Debug)]
@@ -13,6 +13,6 @@ pub enum ErrorFind {
 pub trait Db {
     fn save<'a>(&mut self, fname: &str, s: &'a [u8]) -> chunk::Chunks;
     // TODO: replace usize with metainfo
-    fn find(&mut self, fname: &str) -> Result<(usize, Hashes), ErrorFind>;
+    fn find(&mut self, fname: &str) -> Result<(usize, Vec<Hash>), ErrorFind>;
     fn clean(&mut self, fname: &str);
 }

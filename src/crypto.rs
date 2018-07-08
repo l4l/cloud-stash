@@ -5,23 +5,22 @@ use std::slice::Iter;
 pub const HASH_SIZE: usize = 32;
 #[derive(Debug)]
 pub struct Hash([u8; HASH_SIZE]);
-pub type Hashes = Vec<Hash>;
 
 impl Hash {
     pub fn new(h: [u8; HASH_SIZE]) -> Hash {
         Hash(h)
     }
 
-    pub fn hash<'a>(&'a self) -> &'a [u8; HASH_SIZE] {
+    pub fn hash(&self) -> &[u8; HASH_SIZE] {
         &self.0
     }
 
-    pub fn iter<'a>(&'a self) -> Iter<u8> {
+    pub fn iter(&self) -> Iter<u8> {
         self.0.iter()
     }
 }
 
-pub fn hash<'a>(s: &'a [u8]) -> Hash {
+pub fn hash(s: &[u8]) -> Hash {
     let mut hasher = Sha3_256::default();
     hasher.input(s);
     let res = hasher.result();

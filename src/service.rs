@@ -14,7 +14,7 @@ impl<Db: local::Db, Provider: remote::Provider> Service<Db, Provider> {
     pub fn upload(&mut self, fname: &str, file: &str) {
         let mut content = Vec::new();
         File::open(&file)
-            .expect(&format!("Can't open {}", &file))
+            .unwrap_or_else(|_| panic!("Can't open {}", &file))
             .read_to_end(&mut content)
             .expect("Something happened during file reading");
         let chunks = self.db.save(fname, &content);
