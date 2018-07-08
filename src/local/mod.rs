@@ -12,6 +12,7 @@ pub enum ErrorFind {
 
 pub trait Db {
     fn save<'a>(&mut self, fname: &str, s: &'a [u8]) -> chunk::Chunks;
-    fn find(&mut self, fname: &str) -> Result<Hashes, ErrorFind>;
+    // TODO: replace usize with metainfo
+    fn find(&mut self, fname: &str) -> Result<(usize, Hashes), ErrorFind>;
     fn clean(&mut self, fname: &str);
 }

@@ -1,5 +1,6 @@
 use sha3::{Sha3_256, Digest};
 use std::fmt;
+use std::slice::Iter;
 
 pub const HASH_SIZE: usize = 32;
 #[derive(Debug)]
@@ -13,6 +14,10 @@ impl Hash {
 
     pub fn hash<'a>(&'a self) -> &'a [u8; HASH_SIZE] {
         &self.0
+    }
+
+    pub fn iter<'a>(&'a self) -> Iter<u8> {
+        self.0.iter()
     }
 }
 

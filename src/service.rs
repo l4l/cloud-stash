@@ -1,6 +1,8 @@
 use std::fs::File;
 use std::io::{Read, Write};
+use std::cmp::min;
 use {local, remote};
+use chunk::CHUNK_SIZE;
 
 pub struct Service<Db, Provider> {
     pub db: Db,
@@ -23,15 +25,17 @@ impl<Db: local::Db, Provider: remote::Provider> Service<Db, Provider> {
 
     // TODO?: return result
     pub fn download(&mut self, fname: &str, newname: &str) {
-        let hash_list = self.db.find(&fname).unwrap();
+        let (mut fsize, hash_list) = self.db.find(&fname).unwrap();
         let mut file = File::create(newname).unwrap();
         for h in hash_list {
-            file.write(&self.provider.receive(&h)).unwrap();
+            file.write(&self.provider.receive(&h)[..min(fsize, CHUNK_SIZE)])
+                .unwrap();
+            fsize -= CHUNK_SIZE;
         }
     }
 
     pub fn remove(&mut self, fname: &str) {
-        let hash_list = self.db.find(&fname).unwrap();
+        let (_, hash_list) = self.db.find(&fname).unwrap();
         self.db.clean(&fname);
         self.provider.delete(&hash_list);
     }

@@ -19,7 +19,7 @@ impl Sqlite {
     pub fn new(dbfile: &str) -> Sqlite {
         let c = sqlite::open(dbfile).unwrap();
         c.execute(concat!(
-            "CREATE TABLE IF NOT EXISTS files (fname TEXT, id INTEGER, PRIMARY KEY(id), CONSTRAINT fname_unique UNIQUE (fname));",
+            "CREATE TABLE IF NOT EXISTS files (fname TEXT, id INTEGER, fsize INTEGER, PRIMARY KEY(id), CONSTRAINT fname_unique UNIQUE (fname));",
             "CREATE TABLE IF NOT EXISTS hashes (hash BLOB, id INTEGER, idx INTEGER, FOREIGN KEY(id) REFERENCES files(id), PRIMARY KEY(id, idx));",
         )).unwrap();
         Sqlite { conn: c }
@@ -29,9 +29,10 @@ impl Sqlite {
 impl Db for Sqlite {
     fn save<'a>(&mut self, fname: &str, s: &'a [u8]) -> chunk::Chunks {
         let mut file_add = self.conn
-            .prepare("INSERT INTO files VALUES(?, NULL)")
+            .prepare("INSERT INTO files VALUES(?, NULL, ?)")
             .unwrap();
         file_add.bind(1, fname).unwrap();
+        file_add.bind(2, s.len() as i64).unwrap();
         assert_eq!(file_add.next().unwrap(), sqlite::State::Done);
         let mut get_id = self.conn
             .prepare("SELECT id FROM files WHERE fname=?")
@@ -62,7 +63,7 @@ impl Db for Sqlite {
             .collect()
     }
 
-    fn find(&mut self, fname: &str) -> Result<Hashes, ErrorFind> {
+    fn find(&mut self, fname: &str) -> Result<(usize, Hashes), ErrorFind> {
         let mut file_info = self.conn
             .prepare(
                 "SELECT hash, idx FROM hashes WHERE hashes.id=(SELECT id FROM files WHERE fname=?) ORDER BY idx",
@@ -79,7 +80,12 @@ impl Db for Sqlite {
         if vec.len() == 0 {
             Err(ErrorFind::NoMatch)
         } else {
-            Ok(vec)
+            let mut file_size = self.conn
+                .prepare("SELECT fsize FROM files WHERE fname=?")
+                .unwrap();
+            file_size.bind(1, fname).unwrap();
+            file_size.next().unwrap();
+            Ok((file_size.read::<i64>(0).unwrap() as usize, vec))
         }
     }
 
@@ -135,7 +141,8 @@ mod test {
         let b = random_blob(chunk::CHUNK_SIZE * 3 + 1);
         let fname = "myfile";
         let chunks = s.save(fname, &b);
-        let hashes = s.find(fname).unwrap();
+        let (bsize, hashes) = s.find(fname).unwrap();
+        assert_eq!(bsize, b.len());
         chunks.iter().map(|c| &c.hash).zip(hashes).for_each(
             |(c, h)| {
                 assert_eq!(c, &h)
