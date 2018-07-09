@@ -101,11 +101,16 @@ impl Db for Sqlite {
         exec("DELETE FROM files WHERE fname=?");
     }
 
-    fn list(&mut self) -> Vec<String> {
+    fn list(&mut self) -> Vec<(String, i64)> {
         let mut ss = Vec::new();
-        let mut fnames = self.conn.prepare("SELECT fname FROM files").unwrap();
+        let mut fnames = self.conn
+            .prepare("SELECT fname, fsize FROM files ORDER BY fname")
+            .unwrap();
         while let sqlite::State::Row = fnames.next().unwrap() {
-            ss.push(fnames.read::<String>(0).unwrap());
+            ss.push((
+                fnames.read::<String>(0).unwrap(),
+                fnames.read::<i64>(1).unwrap(),
+            ));
         }
         ss
     }
@@ -196,7 +201,7 @@ mod test {
         let list = s.list();
         assert_eq!(list.len(), 3);
         list.iter().enumerate().for_each(
-            |(i, l)| assert_eq!(f[i], l),
+            |(i, l)| assert_eq!(f[i], l.0),
         );
     }
 }
