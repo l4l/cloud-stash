@@ -39,8 +39,25 @@ impl fmt::Display for Hash {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.0
             .iter()
-            .map(|x| write!(f, "{:x}", x))
+            .map(|x| write!(f, "{:02x}", x))
             .find(|r| r.is_err())
             .unwrap_or(Ok(()))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crypto::{Hash, HASH_SIZE};
+    #[test]
+    fn test_hash_fmt() {
+        let mut a = [0u8; HASH_SIZE];
+        for i in 0..HASH_SIZE {
+            a[i] = i as u8;
+        }
+        let h = Hash::new(a.clone());
+        assert_eq!(
+            format!("{}", h),
+            "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+        );
     }
 }
