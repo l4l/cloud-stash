@@ -15,4 +15,5 @@ pub trait Db {
     // TODO: replace usize with metainfo
     fn find(&mut self, fname: &str) -> Result<(usize, Vec<Hash>), ErrorFind>;
     fn clean(&mut self, fname: &str);
+    fn list(&mut self) -> Vec<String>;
 }

@@ -100,6 +100,15 @@ impl Db for Sqlite {
         );
         exec("DELETE FROM files WHERE fname=?");
     }
+
+    fn list(&mut self) -> Vec<String> {
+        let mut ss = Vec::new();
+        let mut fnames = self.conn.prepare("SELECT fname FROM files").unwrap();
+        while let sqlite::State::Row = fnames.next().unwrap() {
+            ss.push(fnames.read::<String>(0).unwrap());
+        }
+        ss
+    }
 }
 
 
@@ -176,5 +185,18 @@ mod test {
         assert!(s.find(fname).is_ok());
         s.clean(fname);
         assert!(s.find(fname).is_err());
+    }
+
+    #[test]
+    fn save_list() {
+        let mut s = init();
+        let g = || random_blob(chunk::CHUNK_SIZE);
+        let f = ["f1", "f2", "f3"];
+        let _ = (s.save(f[0], &g()), s.save(f[2], &g()), s.save(f[1], &g()));
+        let list = s.list();
+        assert_eq!(list.len(), 3);
+        list.iter().enumerate().for_each(
+            |(i, l)| assert_eq!(f[i], l),
+        );
     }
 }
