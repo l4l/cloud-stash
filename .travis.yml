@@ -5,3 +5,5 @@ cache: cargo
 rust:
   - stable
   - nightly
+install:
+  - sudo apt-get update && sudo apt-get install -y libfuse-dev;
