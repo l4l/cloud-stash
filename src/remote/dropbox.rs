@@ -4,7 +4,7 @@ use crypto::Hash;
 use remote::Provider;
 use reqwest;
 use hyper::error::Error;
-use reqwest::header::{Authorization, Header, Bearer, Formatter, Raw, ContentType};
+use reqwest::header::{Authorization, Header, Bearer, Formatter, Raw, ContentType, Connection};
 use serde_json;
 
 #[derive(Debug)]
@@ -69,12 +69,12 @@ impl Provider for Dropbox {
             .post("https://content.dropboxapi.com/2/files/download")
             .header(Authorization(Bearer { token: self.token().to_owned() }))
             .header(DropboxApiArg { val: json!({"path": format!("/{}", &h)}) })
+            .header(Connection::close())
             .send()
             .unwrap();
-        let mut buf = Vec::new();
-        res.copy_to(&mut buf).unwrap();
-        assert_eq!(buf.len(), chunk::CHUNK_SIZE);
         println!("{:?}", res);
+        let mut buf = Vec::new();
+        assert_eq!(res.copy_to(&mut buf).unwrap(), chunk::CHUNK_SIZE as u64);
         let mut r = [0u8; chunk::CHUNK_SIZE];
         r.copy_from_slice(&buf[..chunk::CHUNK_SIZE]);
         r

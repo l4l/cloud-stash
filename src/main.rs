@@ -8,6 +8,10 @@ extern crate reqwest;
 #[macro_use]
 extern crate serde_json;
 extern crate hyper;
+extern crate netfuse;
+extern crate fuse;
+extern crate libc;
+extern crate time;
 
 mod local;
 mod remote;
@@ -15,6 +19,7 @@ mod chunk;
 mod service;
 mod get_token;
 mod crypto;
+mod fs;
 
 const USAGE: &str = "
 cloud-stash is a tool for managing multiple file storage accounts.
@@ -23,6 +28,7 @@ Usage:
   cloud-stash (-u | --upload) <file> <newname> <token>
   cloud-stash (-d | --download) <file> <newname> <token>
   cloud-stash (-r | --remove) <file> <token>
+  cloud-stash (-m | --mount) <file> <token>
   cloud-stash (-h | --help)
   cloud-stash --version
 
@@ -36,6 +42,7 @@ Options:
   -u --upload              Upload a file
   -d --download            Download a file
   -r --remove              File removing from the remote host
+  -m --mount               Perform fs mount
   -h --help                Show this help.
   --version                Show version.
 ";
@@ -49,6 +56,7 @@ struct Args {
     flag_upload: bool,
     flag_download: bool,
     flag_remove: bool,
+    flag_mount: bool,
 }
 
 fn main() {
@@ -58,21 +66,31 @@ fn main() {
     if args.flag_auth {
         get_token::run_handler();
     }
-    let mut service = service::Service::<local::sqlite::Sqlite, remote::dropbox::Dropbox> {
-        db: local::sqlite::Sqlite::new("db"),
-        provider: remote::dropbox::Dropbox::new(args.arg_token.expect(USAGE)),
-    };
+    let db = local::sqlite::Sqlite::new("db");
+    let provider = remote::dropbox::Dropbox::new(args.arg_token.expect(USAGE));
     if args.flag_upload {
-        service.upload(
+        service::Service {
+            db: db,
+            provider: provider,
+        }.upload(
             &args.arg_newname.expect(USAGE),
             &args.arg_file.expect(USAGE),
         );
     } else if args.flag_download {
-        service.download(
+        service::Service {
+            db: db,
+            provider: provider,
+        }.download(
             &args.arg_file.expect(USAGE),
             &args.arg_newname.expect(USAGE),
         );
     } else if args.flag_remove {
-        service.remove(&args.arg_file.expect(USAGE));
+        service::Service {
+            db: db,
+            provider: provider,
+        }.remove(&args.arg_file.expect(USAGE));
+    } else if args.flag_mount {
+        fs::stashfs::StashFs::mount_with(db, provider, &args.arg_file.expect(USAGE));
     }
+    println!("{}", USAGE);
 }
