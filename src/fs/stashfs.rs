@@ -1,4 +1,4 @@
-use netfuse::{NetworkFilesystem, LibcError, Metadata, MountOptions, mount};
+use netfuse::{NetworkFilesystem, LibcError, Metadata, DirEntry, MountOptions, mount};
 use local::Db;
 use remote::Provider;
 use std::path::Path;
@@ -87,5 +87,34 @@ impl<D: Db, P: Provider> NetworkFilesystem for StashFs<D, P> {
         // TODO: use counter to check whether it should be deleted
         self.provider.delete(&hs);
         Ok(())
+    }
+
+    fn readdir(&mut self, path: &Path) -> Vec<Result<DirEntry, LibcError>> {
+        let begin = match get_path(path) {
+            Ok(s) => s,
+            Err(e) => return vec![Err(e)],
+        };
+        self.db
+            .list()
+            .into_iter()
+            .inspect(|(s, meta)| println!("{:?}", (s, meta)))
+            .filter(|(s, _)| s.as_str().starts_with(&begin))
+            .map(|(mut s, meta)| {s.drain(begin.len()..).fold(0, |acc, _| acc); (s, meta)})
+            // .filter(|(s, _)| s.find('/').is_none())
+            .map(|(s, meta)| {
+                Ok(DirEntry::new(
+                    ::std::ffi::OsString::from(s),
+                    Metadata {
+                        size: meta as u64,
+                        atime: Timespec::new(0, 0),
+                        mtime: Timespec::new(0, 0),
+                        ctime: Timespec::new(0, 0),
+                        crtime: Timespec::new(0, 0),
+                        kind: FileType::RegularFile,
+                        perm: 0o777,
+                    },
+                ))
+            })
+            .collect()
     }
 }
