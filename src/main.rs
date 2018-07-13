@@ -2,7 +2,7 @@ extern crate docopt;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate sqlite;
+extern crate rusqlite;
 extern crate sha3;
 extern crate reqwest;
 #[macro_use]

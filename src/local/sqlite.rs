@@ -1,10 +1,10 @@
 use chunk;
 use local::{Db, ErrorFind};
-use sqlite;
+use rusqlite;
 use crypto::{hash, Hash, HASH_SIZE};
 
 pub struct Sqlite {
-    conn: sqlite::Connection,
+    conn: rusqlite::Connection,
 }
 
 impl Sqlite {
@@ -16,30 +16,33 @@ impl Sqlite {
     /// ## Table hashes
     /// Maps unique pair of chunk hash and chunks' file id to its positional index in file
     ///
-    pub fn new(dbfile: &str) -> Sqlite {
-        let c = sqlite::open(dbfile).unwrap();
-        c.execute(concat!(
+    fn init(c: &rusqlite::Connection) {
+        c.execute_batch(concat!(
             "CREATE TABLE IF NOT EXISTS files (fname TEXT, id INTEGER, fsize INTEGER, PRIMARY KEY(id), CONSTRAINT fname_unique UNIQUE (fname));",
-            "CREATE TABLE IF NOT EXISTS hashes (hash BLOB, id INTEGER, idx INTEGER, FOREIGN KEY(id) REFERENCES files(id), PRIMARY KEY(id, idx));",
-        )).unwrap();
+            "CREATE TABLE IF NOT EXISTS hashes (hash BLOB, id INTEGER, idx INTEGER, FOREIGN KEY(id) REFERENCES files(id), PRIMARY KEY(id, idx));")
+        ).unwrap();
+    }
+
+    pub fn new(dbfile: &str) -> Sqlite {
+        let c = rusqlite::Connection::open(dbfile).unwrap();
+        Sqlite::init(&c);
         Sqlite { conn: c }
     }
 }
 
 impl Db for Sqlite {
-    fn save<'a>(&mut self, fname: &str, s: &'a [u8]) -> chunk::Chunks {
-        let mut file_add = self.conn
-            .prepare("INSERT INTO files VALUES(?, NULL, ?)")
+    fn save(&mut self, fname: &str, s: &[u8]) -> chunk::Chunks {
+        self.conn
+            .execute(
+                "INSERT INTO files VALUES(?, NULL, ?)",
+                &[&fname, &(s.len() as i64)],
+            )
             .unwrap();
-        file_add.bind(1, fname).unwrap();
-        file_add.bind(2, s.len() as i64).unwrap();
-        assert_eq!(file_add.next().unwrap(), sqlite::State::Done);
-        let mut get_id = self.conn
-            .prepare("SELECT id FROM files WHERE fname=?")
+        let id: i64 = self.conn
+            .query_row("SELECT id FROM files WHERE fname=?", &[&fname], |row| {
+                row.get(0)
+            })
             .unwrap();
-        get_id.bind(1, fname).unwrap();
-        get_id.next().unwrap();
-        let id = get_id.read::<i64>(0).unwrap();
         s.chunks(chunk::CHUNK_SIZE)
             .enumerate()
             .map(|(idx, c)| {
@@ -47,13 +50,16 @@ impl Db for Sqlite {
                 c.iter().enumerate().for_each(|(i, c)| block[i] = *c);
                 let block = block;
                 let h = hash(&block);
-                let mut add_chunk = self.conn
-                    .prepare("INSERT INTO hashes VALUES(?, ?, ?)")
+                self.conn
+                    .execute(
+                        "INSERT INTO hashes VALUES(?, ?, ?)",
+                        &[
+                            &h.hash().into_iter().cloned().collect::<Vec<u8>>(),
+                            &id,
+                            &(idx as i64),
+                        ],
+                    )
                     .unwrap();
-                add_chunk.bind(1, h.hash() as &[u8]).unwrap();
-                add_chunk.bind(2, id).unwrap();
-                add_chunk.bind(3, idx as i64).unwrap();
-                assert_eq!(add_chunk.next().unwrap(), sqlite::State::Done);
                 chunk::Chunk {
                     hash: h,
                     chunk: block,
@@ -69,50 +75,53 @@ impl Db for Sqlite {
                 "SELECT hash, idx FROM hashes WHERE hashes.id=(SELECT id FROM files WHERE fname=?) ORDER BY idx",
             )
             .unwrap();
-        file_info.bind(1, fname).unwrap();
-        let mut vec = Vec::new();
-        while let sqlite::State::Row = file_info.next().unwrap() {
-            let hash_blob = file_info.read::<Vec<u8>>(0).unwrap();
-            let mut hash = [0u8; HASH_SIZE];
-            hash_blob.iter().enumerate().for_each(|(i, h)| hash[i] = *h);
-            vec.push(Hash::new(hash));
-        }
+        let vec: Vec<Hash> = file_info
+            .query_map(&[&fname], |row| {
+                let mut arr = [0u8; HASH_SIZE];
+                row.get::<_, Vec<u8>>(0).into_iter().enumerate().for_each(
+                    |(i, x)| {
+                        arr[i] = x
+                    },
+                );
+                arr
+            })
+            .unwrap()
+            .map(|x| Hash::new(x.unwrap()))
+            .collect();
         if vec.is_empty() {
             Err(ErrorFind::NoMatch)
         } else {
-            let mut file_size = self.conn
-                .prepare("SELECT fsize FROM files WHERE fname=?")
+            let file_size: i64 = self.conn
+                .query_row("SELECT fsize FROM files WHERE fname=?", &[&fname], |row| {
+                    row.get(0)
+                })
                 .unwrap();
-            file_size.bind(1, fname).unwrap();
-            file_size.next().unwrap();
-            Ok((file_size.read::<i64>(0).unwrap() as usize, vec))
+            Ok((file_size as usize, vec))
         }
     }
 
     fn clean(&mut self, fname: &str) {
-        let exec = |qry| {
-            let mut rmv = self.conn.prepare(qry).unwrap();
-            rmv.bind(1, fname).unwrap();
-            rmv.next().unwrap();
-        };
-        exec(
-            "DELETE FROM hashes WHERE hashes.id=(SELECT id FROM files WHERE fname=?)",
-        );
-        exec("DELETE FROM files WHERE fname=?");
+        self.conn
+            .execute(
+                "DELETE FROM hashes WHERE hashes.id=(SELECT id FROM files WHERE fname=?)",
+                &[&fname],
+            )
+            .unwrap();
+        self.conn
+            .execute("DELETE FROM files WHERE fname=?", &[&fname])
+            .unwrap();
     }
 
     fn list(&mut self) -> Vec<(String, i64)> {
-        let mut ss = Vec::new();
-        let mut fnames = self.conn
+        let mut elems = self.conn
             .prepare("SELECT fname, fsize FROM files ORDER BY fname")
             .unwrap();
-        while let sqlite::State::Row = fnames.next().unwrap() {
-            ss.push((
-                fnames.read::<String>(0).unwrap(),
-                fnames.read::<i64>(1).unwrap(),
-            ));
-        }
-        ss
+        let elems: Vec<_> = elems
+            .query_map(&[], |row| (row.get::<_, String>(0), row.get::<_, i64>(1)))
+            .unwrap()
+            .map(|x| x.unwrap())
+            .collect();
+        elems
     }
 }
 
@@ -126,7 +135,10 @@ mod test {
     use crypto;
 
     fn init() -> Sqlite {
-        Sqlite::new(":memory:")
+        use rusqlite::Connection;
+        let c = Connection::open_in_memory().unwrap();
+        Sqlite::init(&c);
+        Sqlite { conn: c }
     }
 
     fn random_blob(sz: usize) -> Vec<u8> {
