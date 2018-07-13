@@ -69,26 +69,17 @@ fn main() {
     let db = local::sqlite::Sqlite::new("db");
     let provider = remote::dropbox::Dropbox::new(args.arg_token.expect(USAGE));
     if args.flag_upload {
-        service::Service {
-            db: db,
-            provider: provider,
-        }.upload(
+        service::Service { db, provider }.upload(
             &args.arg_newname.expect(USAGE),
             &args.arg_file.expect(USAGE),
         );
     } else if args.flag_download {
-        service::Service {
-            db: db,
-            provider: provider,
-        }.download(
+        service::Service { db, provider }.download(
             &args.arg_file.expect(USAGE),
             &args.arg_newname.expect(USAGE),
         );
     } else if args.flag_remove {
-        service::Service {
-            db: db,
-            provider: provider,
-        }.remove(&args.arg_file.expect(USAGE));
+        service::Service { db, provider }.remove(&args.arg_file.expect(USAGE));
     } else if args.flag_mount {
         fs::stashfs::StashFs::mount_with(db, provider, &args.arg_file.expect(USAGE));
     }

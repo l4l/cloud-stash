@@ -56,8 +56,7 @@ impl Provider for Dropbox {
                             "autorename": false}),
             })
             .header(ContentType::octet_stream())
-            // FIXME?: perhaphs that doesn't need to be cloned
-            .body(s.chunk.iter().cloned().collect::<Vec<u8>>())
+            .body(s.chunk.to_vec())
             .send()
             .unwrap();
         println!("{:?}", res);

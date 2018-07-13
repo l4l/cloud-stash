@@ -28,7 +28,7 @@ impl<Db: local::Db, Provider: remote::Provider> Service<Db, Provider> {
         let (mut fsize, hash_list) = self.db.find(&fname).unwrap();
         let mut file = File::create(newname).unwrap();
         for h in hash_list {
-            file.write(&self.provider.receive(&h)[..min(fsize, CHUNK_SIZE)])
+            file.write_all(&self.provider.receive(&h)[..min(fsize, CHUNK_SIZE)])
                 .unwrap();
             fsize -= CHUNK_SIZE;
         }
