@@ -12,6 +12,9 @@ extern crate netfuse;
 extern crate fuse;
 extern crate libc;
 extern crate time;
+#[macro_use]
+extern crate log;
+extern crate env_logger;
 
 mod local;
 mod remote;
@@ -60,6 +63,7 @@ struct Args {
 }
 
 fn main() {
+    env_logger::init();
     let args: Args = docopt::Docopt::new(USAGE)
         .and_then(|d| d.deserialize())
         .unwrap_or_else(|e| e.exit());
@@ -82,6 +86,7 @@ fn main() {
         service::Service { db, provider }.remove(&args.arg_file.expect(USAGE));
     } else if args.flag_mount {
         fs::stashfs::StashFs::mount_with(db, provider, &args.arg_file.expect(USAGE));
+    } else {
+        println!("{}", USAGE);
     }
-    println!("{}", USAGE);
 }

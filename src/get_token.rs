@@ -29,7 +29,7 @@ pub fn run_handler() {
                 exit(0);
             }
             Err(e) => {
-                println!("Something went wrong: {}\n Try again.", e);
+                panic!("Something went wrong: {}\n Try again.", e);
             }
         }
     }

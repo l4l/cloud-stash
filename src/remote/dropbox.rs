@@ -59,7 +59,7 @@ impl Provider for Dropbox {
             .body(s.chunk.to_vec())
             .send()
             .unwrap();
-        println!("{:?}", res);
+        debug!("{:?}", res);
     }
 
     fn receive(&mut self, h: &Hash) -> chunk::Data {
@@ -71,7 +71,7 @@ impl Provider for Dropbox {
             .header(Connection::close())
             .send()
             .unwrap();
-        println!("{:?}", res);
+        debug!("{:?}", res);
         let mut buf = Vec::new();
         assert_eq!(res.copy_to(&mut buf).unwrap(), chunk::CHUNK_SIZE as u64);
         let mut r = [0u8; chunk::CHUNK_SIZE];
@@ -87,6 +87,6 @@ impl Provider for Dropbox {
             .header(DropboxApiArg { val: json!({"entries": serde_json::Value::Array(hs.iter().map(|h| json!({"path": format!("/{}", &h)})).collect())})})
             .send()
             .unwrap();
-        println!("{:?}", res);
+        debug!("{:?}", res);
     }
 }

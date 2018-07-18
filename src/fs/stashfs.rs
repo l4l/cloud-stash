@@ -39,7 +39,7 @@ impl<D: Db, P: Provider> StashFs<D, P> {
 
 impl<D: Db, P: Provider> NetworkFilesystem for StashFs<D, P> {
     fn lookup(&mut self, path: &Path) -> Result<Metadata, LibcError> {
-        println!("#lookup {:?}", path);
+        trace!("#lookup {:?}", path);
         let (fsize, _) = get_path(path).and_then(|p| self.find(p))?;
         Ok(Metadata {
             size: fsize as u64,
@@ -53,7 +53,7 @@ impl<D: Db, P: Provider> NetworkFilesystem for StashFs<D, P> {
     }
 
     fn read(&mut self, path: &Path, buffer: &mut Vec<u8>) -> Result<usize, LibcError> {
-        println!("#read {:?}", path);
+        trace!("#read {:?}", path);
         let (fsize, hlist) = get_path(path).and_then(|p| self.find(p))?;
         buffer.reserve(fsize);
         hlist.iter().enumerate().for_each(|(i, h)| {
@@ -65,7 +65,7 @@ impl<D: Db, P: Provider> NetworkFilesystem for StashFs<D, P> {
     }
 
     fn write(&mut self, path: &Path, data: &[u8]) -> Result<(), LibcError> {
-        println!("#write {:?}", path);
+        trace!("#write {:?}", path);
         let fname = get_path(path)?;
         // make sure the file exists
         if let Ok((_, hs)) = self.find(&fname) {
@@ -80,7 +80,7 @@ impl<D: Db, P: Provider> NetworkFilesystem for StashFs<D, P> {
     }
 
     fn unlink(&mut self, path: &Path) -> Result<(), LibcError> {
-        println!("#unlink {:?}", path);
+        trace!("#unlink {:?}", path);
         let fname = get_path(path)?;
         let (_, hs) = self.find(&fname)?;
         self.db.clean(&fname);
@@ -97,7 +97,7 @@ impl<D: Db, P: Provider> NetworkFilesystem for StashFs<D, P> {
         self.db
             .list()
             .into_iter()
-            .inspect(|(s, meta)| println!("{:?}", (s, meta)))
+            .inspect(|(s, meta)| trace!("{:?}", (s, meta)))
             .filter(|(s, _)| s.as_str().starts_with(&begin))
             .map(|(mut s, meta)| {s.drain(begin.len()..).fold(0, |acc, _| acc); (s, meta)})
             // .filter(|(s, _)| s.find('/').is_none())
