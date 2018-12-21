@@ -1,10 +1,8 @@
-use std;
 use chunk;
 use crypto::Hash;
 use remote::Provider;
 use reqwest;
-use hyper::error::Error;
-use reqwest::header::{Authorization, Header, Bearer, Formatter, Raw, ContentType, Connection};
+use reqwest::header::{HeaderName, CONNECTION, CONTENT_TYPE};
 use serde_json;
 
 #[derive(Debug)]
@@ -27,35 +25,22 @@ struct DropboxApiArg {
     val: serde_json::Value,
 }
 
-impl Header for DropboxApiArg {
-    fn header_name() -> &'static str {
-        "Dropbox-API-Arg"
-    }
-
-    fn parse_header(raw: &Raw) -> Result<Self, Error> {
-        Ok(DropboxApiArg {
-            val: raw.one()
-                .and_then(|l| serde_json::from_slice(l).ok())
-                .ok_or(Error::Header)?,
-        })
-    }
-    fn fmt_header(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
-        f.fmt_line(&self.val)
-    }
-}
+const DROPBOX_HDR: &str = "Dropbox-API-Arg";
 
 impl Provider for Dropbox {
     fn publish(&mut self, s: &chunk::Chunk) {
         let client = reqwest::Client::new();
         let res = client
             .post("https://content.dropboxapi.com/2/files/upload")
-            .header(Authorization(Bearer { token: self.token().to_owned() }))
-            .header(DropboxApiArg {
-                val: json!({"path": format!("/{}", &s.hash),
+            .bearer_auth(self.token().to_owned())
+            .header(
+                HeaderName::from_static(DROPBOX_HDR),
+                json!({"path": format!("/{}", &s.hash),
                             "mode": "add",
-                            "autorename": false}),
-            })
-            .header(ContentType::octet_stream())
+                            "autorename": false})
+                .to_string(),
+            )
+            .header(CONTENT_TYPE, "application/octet-stream")
             .body(s.chunk.to_vec())
             .send()
             .unwrap();
@@ -66,9 +51,12 @@ impl Provider for Dropbox {
         let client = reqwest::Client::new();
         let mut res = client
             .post("https://content.dropboxapi.com/2/files/download")
-            .header(Authorization(Bearer { token: self.token().to_owned() }))
-            .header(DropboxApiArg { val: json!({"path": format!("/{}", &h)}) })
-            .header(Connection::close())
+            .bearer_auth(self.token().to_owned())
+            .header(
+                HeaderName::from_static(DROPBOX_HDR),
+                json!({ "path": format!("/{}", &h) }).to_string(),
+            )
+            .header(CONNECTION, "close")
             .send()
             .unwrap();
         debug!("{:?}", res);
@@ -83,8 +71,15 @@ impl Provider for Dropbox {
         let client = reqwest::Client::new();
         let res = client
             .post("https://content.dropboxapi.com/2/files/download")
-            .header(Authorization(Bearer { token: self.token().to_owned() }))
-            .header(DropboxApiArg { val: json!({"entries": serde_json::Value::Array(hs.iter().map(|h| json!({"path": format!("/{}", &h)})).collect())})})
+            .bearer_auth(self.token().to_owned())
+            .header(
+                HeaderName::from_static(DROPBOX_HDR),
+                json!({
+                    "entries": serde_json::Value::Array(
+                        hs.iter()
+                          .map(|h| json!({"path": format!("/{}", &h)})).collect())})
+                .to_string(),
+            )
             .send()
             .unwrap();
         debug!("{:?}", res);

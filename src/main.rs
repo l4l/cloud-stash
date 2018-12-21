@@ -2,27 +2,26 @@ extern crate docopt;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+extern crate reqwest;
 extern crate rusqlite;
 extern crate sha3;
-extern crate reqwest;
 #[macro_use]
 extern crate serde_json;
-extern crate hyper;
-extern crate netfuse;
 extern crate fuse;
 extern crate libc;
+extern crate netfuse;
 extern crate time;
 #[macro_use]
 extern crate log;
 extern crate env_logger;
 
-mod local;
-mod remote;
 mod chunk;
-mod service;
-mod get_token;
 mod crypto;
 mod fs;
+mod get_token;
+mod local;
+mod remote;
+mod service;
 
 const USAGE: &str = "
 cloud-stash is a tool for managing multiple file storage accounts.
