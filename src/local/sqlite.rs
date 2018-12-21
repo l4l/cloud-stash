@@ -1,7 +1,8 @@
-use chunk;
-use local::{Db, ErrorFind};
 use rusqlite;
-use crypto::{hash, Hash, HASH_SIZE};
+
+use crate::chunk;
+use crate::crypto::{hash, Hash, HASH_SIZE};
+use crate::local::{Db, ErrorFind};
 
 pub struct Sqlite {
     conn: rusqlite::Connection,
@@ -38,7 +39,8 @@ impl Db for Sqlite {
                 &[&fname, &(s.len() as i64)],
             )
             .unwrap();
-        let id: i64 = self.conn
+        let id: i64 = self
+            .conn
             .query_row("SELECT id FROM files WHERE fname=?", &[&fname], |row| {
                 row.get(0)
             })
@@ -78,11 +80,10 @@ impl Db for Sqlite {
         let vec: Vec<Hash> = file_info
             .query_map(&[&fname], |row| {
                 let mut arr = [0u8; HASH_SIZE];
-                row.get::<_, Vec<u8>>(0).into_iter().enumerate().for_each(
-                    |(i, x)| {
-                        arr[i] = x
-                    },
-                );
+                row.get::<_, Vec<u8>>(0)
+                    .into_iter()
+                    .enumerate()
+                    .for_each(|(i, x)| arr[i] = x);
                 arr
             })
             .unwrap()
@@ -91,7 +92,8 @@ impl Db for Sqlite {
         if vec.is_empty() {
             Err(ErrorFind::NoMatch)
         } else {
-            let file_size: i64 = self.conn
+            let file_size: i64 = self
+                .conn
                 .query_row("SELECT fsize FROM files WHERE fname=?", &[&fname], |row| {
                     row.get(0)
                 })
@@ -113,7 +115,8 @@ impl Db for Sqlite {
     }
 
     fn list(&mut self) -> Vec<(String, i64)> {
-        let mut elems = self.conn
+        let mut elems = self
+            .conn
             .prepare("SELECT fname, fsize FROM files ORDER BY fname")
             .unwrap();
         let elems: Vec<_> = elems
@@ -125,14 +128,12 @@ impl Db for Sqlite {
     }
 }
 
-
 #[cfg(test)]
 mod test {
-    extern crate rand;
-    use local::sqlite::Sqlite;
-    use local::Db;
-    use chunk;
-    use crypto;
+    use crate::chunk;
+    use crate::crypto;
+    use crate::local::sqlite::Sqlite;
+    use crate::local::Db;
 
     fn init() -> Sqlite {
         use rusqlite::Connection;
@@ -169,11 +170,11 @@ mod test {
         let chunks = s.save(fname, &b);
         let (bsize, hashes) = s.find(fname).unwrap();
         assert_eq!(bsize, b.len());
-        chunks.iter().map(|c| &c.hash).zip(hashes).for_each(
-            |(c, h)| {
-                assert_eq!(c, &h)
-            },
-        );
+        chunks
+            .iter()
+            .map(|c| &c.hash)
+            .zip(hashes)
+            .for_each(|(c, h)| assert_eq!(c, &h));
     }
 
     #[test]
@@ -212,8 +213,8 @@ mod test {
         let _ = (s.save(f[0], &g()), s.save(f[2], &g()), s.save(f[1], &g()));
         let list = s.list();
         assert_eq!(list.len(), 3);
-        list.iter().enumerate().for_each(
-            |(i, l)| assert_eq!(f[i], l.0),
-        );
+        list.iter()
+            .enumerate()
+            .for_each(|(i, l)| assert_eq!(f[i], l.0));
     }
 }

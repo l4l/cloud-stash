@@ -2,6 +2,10 @@
 name = "cloud-stash"
 version = "0.1.0"
 authors = ["Kitsu <mail@kitsu.me>"]
+edition = "2018"
+
+[features]
+persistent = ["rusqlite"]
 
 [dependencies]
 docopt = "0.8"
@@ -14,7 +18,7 @@ netfuse = { git = "https://github.com/l4l/netfuse", branch = "readdir_owned" }
 libc = "0.2.12"
 fuse = "0.2.7"
 time = "*"
-rusqlite = { version = "0.13.0", features = ["blob"] }
+rusqlite = { version = "0.13.0", features = ["blob"], optional = true }
 log = "0.4.0"
 env_logger = "0.5.10"
 

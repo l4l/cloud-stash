@@ -1,8 +1,9 @@
+use std::cmp::min;
 use std::fs::File;
 use std::io::{Read, Write};
-use std::cmp::min;
-use {local, remote};
-use chunk::CHUNK_SIZE;
+
+use crate::chunk::CHUNK_SIZE;
+use crate::{local, remote};
 
 pub struct Service<Db, Provider> {
     pub db: Db,

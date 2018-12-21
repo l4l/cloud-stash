@@ -1,5 +1,8 @@
-use chunk;
-use crypto::Hash;
+use crate::chunk;
+use crate::crypto::Hash;
+
+pub mod memory;
+#[cfg(feature = "persistent")]
 pub mod sqlite;
 
 #[derive(Debug)]

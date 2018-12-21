@@ -1,4 +1,5 @@
-use crypto::Hash;
+use crate::crypto::Hash;
+
 pub const CHUNK_SIZE: usize = 512;
 pub type Data = [u8; CHUNK_SIZE];
 

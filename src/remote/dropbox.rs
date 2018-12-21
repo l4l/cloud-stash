@@ -1,9 +1,11 @@
-use chunk;
-use crypto::Hash;
-use remote::Provider;
+use log::*;
 use reqwest;
 use reqwest::header::{HeaderName, CONNECTION, CONTENT_TYPE};
-use serde_json;
+use serde_json::*;
+
+use crate::chunk;
+use crate::crypto::Hash;
+use crate::remote::Provider;
 
 #[derive(Debug)]
 pub struct Dropbox {
@@ -22,7 +24,7 @@ impl<'a> Dropbox {
 
 #[derive(Clone)]
 struct DropboxApiArg {
-    val: serde_json::Value,
+    val: Value,
 }
 
 const DROPBOX_HDR: &str = "Dropbox-API-Arg";

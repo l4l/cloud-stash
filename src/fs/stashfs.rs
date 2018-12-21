@@ -1,13 +1,16 @@
-use netfuse::{NetworkFilesystem, LibcError, Metadata, DirEntry, MountOptions, mount};
-use local::Db;
-use remote::Provider;
-use std::path::Path;
-use libc;
-use fuse::FileType;
-use time::Timespec;
 use std::cmp::min;
-use chunk::CHUNK_SIZE;
-use crypto::Hash;
+use std::path::Path;
+
+use libc;
+use log::*;
+use netfuse::{mount, DirEntry, LibcError, Metadata, MountOptions, NetworkFilesystem};
+use time::Timespec;
+
+use crate::chunk::CHUNK_SIZE;
+use crate::crypto::Hash;
+use crate::local::Db;
+use crate::remote::Provider;
+use fuse::FileType;
 
 pub struct StashFs<D: Db, P: Provider> {
     db: D,
@@ -73,9 +76,10 @@ impl<D: Db, P: Provider> NetworkFilesystem for StashFs<D, P> {
             self.db.clean(&fname);
             self.provider.delete(&hs);
         }
-        self.db.save(fname, data).iter().for_each(
-            |c| self.provider.publish(c),
-        );
+        self.db
+            .save(fname, data)
+            .iter()
+            .for_each(|c| self.provider.publish(c));
         Ok(())
     }
 
@@ -99,7 +103,10 @@ impl<D: Db, P: Provider> NetworkFilesystem for StashFs<D, P> {
             .into_iter()
             .inspect(|(s, meta)| trace!("{:?}", (s, meta)))
             .filter(|(s, _)| s.as_str().starts_with(&begin))
-            .map(|(mut s, meta)| {s.drain(begin.len()..).fold(0, |acc, _| acc); (s, meta)})
+            .map(|(mut s, meta)| {
+                s.drain(begin.len()..).fold(0, |acc, _| acc);
+                (s, meta)
+            })
             // .filter(|(s, _)| s.find('/').is_none())
             .map(|(s, meta)| {
                 Ok(DirEntry::new(

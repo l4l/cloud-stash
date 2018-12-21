@@ -1,19 +1,6 @@
-extern crate docopt;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-extern crate reqwest;
-extern crate rusqlite;
-extern crate sha3;
-#[macro_use]
-extern crate serde_json;
-extern crate fuse;
-extern crate libc;
-extern crate netfuse;
-extern crate time;
-#[macro_use]
-extern crate log;
-extern crate env_logger;
+use serde_derive::Deserialize;
+
+use crate::local::Db;
 
 mod chunk;
 mod crypto;
@@ -61,6 +48,38 @@ struct Args {
     flag_mount: bool,
 }
 
+#[cfg(feature = "persistent")]
+fn get_db() -> impl Db {
+    local::sqlite::Sqlite::new("db")
+}
+
+#[cfg(not(feature = "persistent"))]
+fn get_db() -> impl Db {
+    if true {
+        unimplemented!()
+    } else {
+        use crate::crypto::Hash;
+        use crate::local::ErrorFind;
+        struct A {}
+        impl Db for A {
+            fn save(&mut self, _: &str, _: &[u8]) -> chunk::Chunks {
+                unimplemented!()
+            }
+            fn find(&mut self, _: &str) -> Result<(usize, Vec<Hash>), ErrorFind> {
+                unimplemented!()
+            }
+            fn clean(&mut self, _: &str) {
+                unimplemented!()
+            }
+            fn list(&mut self) -> Vec<(String, i64)> {
+                unimplemented!()
+            }
+        }
+
+        A {}
+    }
+}
+
 fn main() {
     env_logger::init();
     let args: Args = docopt::Docopt::new(USAGE)
@@ -69,7 +88,7 @@ fn main() {
     if args.flag_auth {
         get_token::run_handler();
     }
-    let db = local::sqlite::Sqlite::new("db");
+    let db = get_db();
     let provider = remote::dropbox::Dropbox::new(args.arg_token.expect(USAGE));
     if args.flag_upload {
         service::Service { db, provider }.upload(

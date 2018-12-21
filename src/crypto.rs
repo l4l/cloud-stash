@@ -1,5 +1,6 @@
-use sha3::{Sha3_256, Digest};
 use std::fmt;
+
+use sha3::{Digest, Sha3_256};
 
 pub const HASH_SIZE: usize = 32;
 #[derive(Debug)]
@@ -42,7 +43,7 @@ impl fmt::Display for Hash {
 
 #[cfg(test)]
 mod test {
-    use crypto::{Hash, HASH_SIZE};
+    use super::{Hash, HASH_SIZE};
     #[test]
     fn test_hash_fmt() {
         let mut a = [0u8; HASH_SIZE];

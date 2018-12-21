@@ -1,5 +1,5 @@
-use std::net::TcpListener;
 use std::io::Write;
+use std::net::TcpListener;
 use std::process::exit;
 
 const URL: &str = concat!(

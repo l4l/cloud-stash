@@ -1,5 +1,6 @@
-use chunk;
-use crypto::Hash;
+use crate::chunk;
+use crate::crypto::Hash;
+
 pub mod dropbox;
 
 pub trait Provider {
