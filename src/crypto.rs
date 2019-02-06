@@ -3,7 +3,8 @@ use std::fmt;
 use sha3::{Digest, Sha3_256};
 
 pub const HASH_SIZE: usize = 32;
-#[derive(Debug)]
+
+#[derive(Debug, Eq, Clone)]
 pub struct Hash([u8; HASH_SIZE]);
 
 impl Hash {

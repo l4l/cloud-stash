@@ -114,13 +114,15 @@ impl Db for Sqlite {
             .unwrap();
     }
 
-    fn list(&mut self) -> Vec<(String, i64)> {
+    fn list(&mut self) -> Vec<(String, usize)> {
         let mut elems = self
             .conn
             .prepare("SELECT fname, fsize FROM files ORDER BY fname")
             .unwrap();
         let elems: Vec<_> = elems
-            .query_map(&[], |row| (row.get::<_, String>(0), row.get::<_, i64>(1)))
+            .query_map(&[], |row| {
+                (row.get::<_, String>(0), row.get::<_, i64>(1) as usize)
+            })
             .unwrap()
             .map(|x| x.unwrap())
             .collect();

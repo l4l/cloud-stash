@@ -55,29 +55,7 @@ fn get_db() -> impl Db {
 
 #[cfg(not(feature = "persistent"))]
 fn get_db() -> impl Db {
-    if true {
-        unimplemented!()
-    } else {
-        use crate::crypto::Hash;
-        use crate::local::ErrorFind;
-        struct A {}
-        impl Db for A {
-            fn save(&mut self, _: &str, _: &[u8]) -> chunk::Chunks {
-                unimplemented!()
-            }
-            fn find(&mut self, _: &str) -> Result<(usize, Vec<Hash>), ErrorFind> {
-                unimplemented!()
-            }
-            fn clean(&mut self, _: &str) {
-                unimplemented!()
-            }
-            fn list(&mut self) -> Vec<(String, i64)> {
-                unimplemented!()
-            }
-        }
-
-        A {}
-    }
+    local::memory::Memory::new()
 }
 
 fn main() {
